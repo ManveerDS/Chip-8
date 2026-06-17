@@ -1,0 +1,154 @@
+/*  
+    Manveer Dhanjal
+    Description:
+    Chip-8 works by using nibbles to jump from memory location to memory location
+    X: The second nibble. Used to look up one of the 16 registers (VX) from V0 through VF.
+    Y: The third nibble. Also used to look up one of the 16 registers (VY) from V0 through VF.
+    N: The fourth nibble. A 4-bit number.
+    NN: The second byte (third and fourth nibbles). An 8-bit immediate number.
+    NNN: The second, third and fourth nibbles. A 12-bit immediate memory address.
+*/
+#include <iostream>
+#include <cstdint> //used to guarntee that the computer architecture does not matter. gives a fixed interger width
+#include <cstring> //Needed for memset
+//TODO Havent decided on what graphic library to use yet
+class Chip8{
+    public:
+    std::uint8_t memory[4096]; //memory needed to run emulator (4kb)
+    std::uint32_t Display[64 * 32]; //displays the emulator running
+    std::uint16_t PC; //points to current memory instruction
+    std::uint16_t I; //points to location in memory or just an address pointer 
+    std::uint16_t Stack[16]; //used for subroutines and functions
+    std::uint8_t stack_pointer; //points to the current stack
+    std::uint8_t delay_timer; //decrements a 60hz (60 times per second) until it hits 0
+    std::uint8_t sound_timer; //functions like the delay_timer but gives a beeping sound until timer hits 0
+    std::uint8_t V[16]; //chip-8 emulators have 8 byte registers and there are 16 of them, they go from 0x00 to 0xFF or V0 to VF
+    std::uint16_t opcode;
+    std::uint8_t keypad[16];
+    /*
+    A keypad that chip-8 emulators use.
+    1	2	3	4
+    Q	W	E	R
+    A	S	D	F
+    Z	X	C	V
+    how the implementation will look
+    */
+   std::uint8_t fontset[80] = {
+    0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+    0x20, 0x60, 0x20, 0x20, 0x70, // 1
+    0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+    0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+    0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+    0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+    0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+    0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+    0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+    0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+    0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+    0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+    0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+    0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+    0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+    0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+    };
+    //Important notes: Roms will all start from memory location 0x200 and end at 0x
+    void OP_00E0()//Clears the display
+    {
+    memset(Display,0,sizeof(Display));
+    }
+    void OP_1NNN(){ //jumps to new memory location
+        PC = opcode & 0x0FFF;
+        /*
+            for this code its jumping to memory location by doing this.
+            example: opcode = 0x1234
+            what this does is 
+            0001 0010 0011 0100
+           +0000 1111 1111 1111 
+        */
+    }
+    void OP_2NNN(){
+        Stack[stack_pointer] = PC;
+        ++stack_pointer;
+        PC = opcode & 0x0FFF;
+        //this opcode instrcution stores the current program counter in the stack for a temporary jump to the address NNN
+    }
+    void OP_6XNN()//sets register VX
+    {
+        uint8_t X = (opcode & 0x0F00) >> 8; // we shift over 8 bits so we get where X is stored (we want 0x0A not 0x0A00 as our register)
+        //The & operation compares the two bits and sees if they are one or see in the second 4 bit space
+        uint8_t NN = (opcode & 0x00FF); // We get the value we are storing in v[x]
+        V[X] = NN;
+    } 
+    void OP_DXYN(){
+        
+    }
+    //The functions below will not be written inline with the class
+    void initialize();
+    void cycle();
+};
+void Chip8::cycle(){
+    opcode = (memory[PC] << 8u) | memory[PC + 1];
+    PC += 2;
+    switch(opcode & 0xF000){
+        case 0x1000:
+            OP_1NNN();
+            break;
+        case 0x2000:
+            OP_2NNN();
+            break;
+        case 0x6000:
+            OP_6XNN();
+            break;
+        default:
+        std::cout << "Opcode switch missing\n";
+    }
+    if(delay_timer > 0){
+        --delay_timer;
+    }
+    if(sound_timer > 0){
+        if(sound_timer == 1){
+            std::cout << "DONE\n";
+            --sound_timer;
+        }
+    }
+}
+void Chip8::initialize(){
+    PC = 0x200; //PC starts at 0x200
+    opcode = 0; //start state
+    I = 0;
+    stack_pointer = 0;
+    OP_00E0(); //clears display to be restarted
+
+    for(auto i = 0; i<15;i++)
+    {
+        Stack[i] = 0; //clear stack
+    }
+    for(auto i = 0; i<15;i++)
+    {
+        V[i] = 0; //clear register V0-VF
+    }
+    for(auto i = 0; i<4095;i++)
+    {
+        memory[i] = 0; //clear memory
+    }
+
+    for (auto i = 0;i<80;++i){
+        memory[i] = fontset[i]; //loads the fontset into memory
+    }
+}
+Chip8 MainChip8;
+
+int main(){
+
+
+    //Need a setupgraphic function here
+    //setupinput function here
+
+    MainChip8.initialize();
+    //Load Rom setup here
+
+    //A for loop
+
+
+    return 0;
+}
