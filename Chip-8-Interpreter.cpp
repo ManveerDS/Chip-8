@@ -74,19 +74,26 @@ class Chip8{
     }
     void OP_6XNN()//sets register VX
     {
-        uint8_t X = (opcode & 0x0F00) >> 8; // we shift over 8 bits so we get where X is stored (we want 0x0A not 0x0A00 as our register)
+        std::uint8_t X = (opcode & 0x0F00) >> 8; // we shift over 8 bits so we get where X is stored (we want 0x0A not 0x0A00 as our register)
         //The & operation compares the two bits and sees if they are one or see in the second 4 bit space
-        uint8_t NN = (opcode & 0x00FF); // We get the value we are storing in v[x]
+        std::uint8_t NN = (opcode & 0x00FF); // We get the value we are storing in v[x]
         V[X] = NN;
     } 
     void OP_DXYN(){
         
+    }
+    void OP_ANNN(){
+
+    }
+    void OP_7XNN(){
+
     }
     //The functions below will not be written inline with the class
     void initialize();
     void cycle();
 };
 void Chip8::cycle(){
+    for(;;){
     opcode = (memory[PC] << 8u) | memory[PC + 1];
     PC += 2;
     switch(opcode & 0xF000){
@@ -109,6 +116,7 @@ void Chip8::cycle(){
         if(sound_timer == 1){
             std::cout << "DONE\n";
             --sound_timer;
+            }
         }
     }
 }
@@ -119,15 +127,15 @@ void Chip8::initialize(){
     stack_pointer = 0;
     OP_00E0(); //clears display to be restarted
 
-    for(auto i = 0; i<15;i++)
+    for(auto i = 0; i<16;i++)
     {
         Stack[i] = 0; //clear stack
     }
-    for(auto i = 0; i<15;i++)
+    for(auto i = 0; i<16;i++)
     {
         V[i] = 0; //clear register V0-VF
     }
-    for(auto i = 0; i<4095;i++)
+    for(auto i = 0; i<4096;i++)
     {
         memory[i] = 0; //clear memory
     }
