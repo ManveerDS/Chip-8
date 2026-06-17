@@ -80,17 +80,36 @@ class Chip8{
         V[X] = NN;
     } 
     void OP_DXYN(){
-        
+        uint16_t X = V[(opcode & 0x0F00) >> 8]; //Fetchs the position of the sprite
+        uint16_t Y = V[(opcode & 0x00F0) >> 4]; 
+        uint16_t height = opcode & 0x000F; //is the pixel value
+        uint16_t pixel;
+        V[0xF] = 0; //resets collision flag
+        for (int yline = 0; yline < height; yline++){
+            pixel = memory[I + yline]; //fetches the sprite from memory
+            for(int xline = 0; xline < 8; xline++){
+                if((pixel & (0x80 >> xline)) != 0){ //checks if the pixel is set to 1
+                    if(Display[(X + xline + ((Y + yline) * 64))] == 1){
+                        V[0xF] = 1; //sets collision flag
+                    }
+                    Display[X + xline + ((Y + yline) * 64)] ^= 1; //draws the sprite to the display
+                }
+            }
+        }
     }
     void OP_ANNN(){
-
+        I = opcode & 0x0FFF; //Sets index register to Address NNN
     }
     void OP_7XNN(){
-
+        uint16_t X = opcode & 0x0F00 >> 8; //Value of X
+        uint16_t NN = opcode & 0x00FF; // Value of NN
+        V[X] += NN; //Adds NN to VX (carry flag needs to be changed if there is a carry)
+        //TODO: Implement carry flag
     }
     //The functions below will not be written inline with the class
     void initialize();
     void cycle();
+    void LoadROM(const char* filename);
 };
 void Chip8::cycle(){
     for(;;){
@@ -105,6 +124,15 @@ void Chip8::cycle(){
             break;
         case 0x6000:
             OP_6XNN();
+            break;
+        case 0xD000:
+            OP_DXYN();
+            break;
+        case 0xA000:
+            OP_ANNN();
+            break;
+        case 0x7000:
+            OP_7XNN();
             break;
         default:
         std::cout << "Opcode switch missing\n";
@@ -144,9 +172,12 @@ void Chip8::initialize(){
         memory[i] = fontset[i]; //loads the fontset into memory
     }
 }
+void Chip8::LoadROM(const char* filename){
+
+}
 Chip8 MainChip8;
 
-int main(){
+int main(int argc, char* argv[]){
 
 
     //Need a setupgraphic function here
