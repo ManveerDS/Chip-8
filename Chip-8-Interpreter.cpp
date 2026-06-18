@@ -11,6 +11,8 @@
 #include <iostream>
 #include <cstdint> //used to guarntee that the computer architecture does not matter. gives a fixed interger width
 #include <cstring> //Needed for memset
+#include <SDL2/SDL.h> // used to display graphics
+#include <fstream> //used to read rom files
 //TODO Havent decided on what graphic library to use yet
 class Chip8{
     public:
@@ -101,7 +103,7 @@ class Chip8{
         I = opcode & 0x0FFF; //Sets index register to Address NNN
     }
     void OP_7XNN(){
-        uint16_t X = opcode & 0x0F00 >> 8; //Value of X
+        uint16_t X = (opcode & 0x0F00) >> 8; //Value of X
         uint16_t NN = opcode & 0x00FF; // Value of NN
         V[X] += NN; //Adds NN to VX (carry flag needs to be changed if there is a carry)
         //TODO: Implement carry flag
@@ -112,7 +114,6 @@ class Chip8{
     void LoadROM(const char* filename);
 };
 void Chip8::cycle(){
-    for(;;){
     opcode = (memory[PC] << 8u) | memory[PC + 1];
     PC += 2;
     switch(opcode & 0xF000){
@@ -146,8 +147,8 @@ void Chip8::cycle(){
             --sound_timer;
             }
         }
-    }
 }
+
 void Chip8::initialize(){
     PC = 0x200; //PC starts at 0x200
     opcode = 0; //start state
@@ -173,20 +174,64 @@ void Chip8::initialize(){
     }
 }
 void Chip8::LoadROM(const char* filename){
+    std::ifstream file(filename, std::ios::binary | std::ios::ate); //reads the binary file
+    if(file.is_open()){
+        std::streampos size = file.tellg(); //gets the size of the file
+        char* buffer = new char[size]; //creates a buffer to hold the file data
+        file.seekg(0, std::ios::beg); //moves the file pointer to the beginning of the file
+        file.read(buffer, size); //reads the file data into the buffer
+        file.close(); //closes the file
 
+        for(int i = 0; i < size; i++){
+            memory[0x200 + i] = buffer[i]; //loads the rom into memory starting at 0x200
+        }
+        delete[] buffer; //frees the buffer memory
+    }
+    else{
+        std::cout << "Failed to open ROM\n";
+    }
 }
 Chip8 MainChip8;
 
 int main(int argc, char* argv[]){
 
 
-    //Need a setupgraphic function here
-    //setupinput function here
+    SDL_Init(SDL_INIT_VIDEO); //initializes SDL2 library
+
+    SDL_Window* window = SDL_CreateWindow("Chip-8 Emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 320, 0);
+    //creates a window called chip-8 emulator that is scaled 64*10 by 32*10
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0); //creates a renderer to render the graphics to the window
+    SDL_Texture* texture = SDL_CreateTexture(
+        renderer, 
+        SDL_PIXELFORMAT_ARGB8888, 
+        SDL_TEXTUREACCESS_STREAMING, 
+        64, 32); 
+        //creates a texture to render the display to the window
 
     MainChip8.initialize();
-    //Load Rom setup here
+    MainChip8.LoadROM(argv[1]);
 
-    //A for loop
+    bool running = true;
+    while(running){
+        SDL_Event event;
+        while(SDL_PollEvent(&event)){
+            if(event.type == SDL_QUIT){
+                running = false;
+            }
+        }
+        for(int i =0;i<10;i++){
+            MainChip8.cycle();
+        }
+        uint32_t pixels[64 * 32];
+        for(int i = 0; i < 64 * 32; i++){
+            pixels[i] = (MainChip8.Display[i] == 1) ? 0xFFFFFFFF : 0xFF000000; //sets the pixel to white if its on and black if its off
+        }
+        SDL_UpdateTexture(texture, NULL, pixels, 64 * sizeof(uint32_t)); //updates the texture with the new pixel data
+        SDL_RenderClear(renderer); //clears the renderer
+        SDL_RenderCopy(renderer, texture, NULL, NULL); //copies the texture to the renderer
+        SDL_RenderPresent(renderer); //presents the renderer to the window
+        SDL_Delay(16); //delays the loop to run at approximately 60 frames per second
+    }
 
 
     return 0;
