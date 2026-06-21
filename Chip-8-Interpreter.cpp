@@ -106,7 +106,7 @@ class Chip8{
         uint16_t X = (opcode & 0x0F00) >> 8; //Value of X
         uint16_t NN = opcode & 0x00FF; // Value of NN
         V[X] += NN; //Adds NN to VX (carry flag needs to be changed if there is a carry)
-        //TODO: Implement carry flag
+        //TODO: Implement carry flag EDIT NOT NEEDED FOR CHIP-8
     }
     void OP_OOEE(){
         --stack_pointer;
@@ -139,6 +139,26 @@ class Chip8{
         if(V[X] != V[Y]){
             PC += 2;
         }
+    }
+    void OP_8XY0(){ //SET function needs to be in cycle too
+        uint16_t X = (opcode & 0x0F00) >> 8; //Value of X
+        uint16_t Y = (opcode & 0x00F0) >> 4; //value of Y
+        V[X] = V[Y];
+    }
+    void OP_8XY1(){
+        uint16_t X = (opcode & 0x0F00) >> 8; //Value of X
+        uint16_t Y = (opcode & 0x00F0) >> 4; //value of Y
+        V[X] = (V[Y] | V[X]); //OR
+    }
+    void OP_8XY2(){
+        uint16_t X = (opcode & 0x0F00) >> 8; //Value of X
+        uint16_t Y = (opcode & 0x00F0) >> 4; //value of Y
+        V[X] = (V[Y] & V[X]); //AND
+    }
+    void OP_8XY3(){
+        uint16_t X = (opcode & 0x0F00) >> 8; //Value of X
+        uint16_t Y = (opcode & 0x00F0) >> 4; //value of Y
+        V[X] = (V[Y] ^ V[X]); //XOR
     }
     //The functions below will not be written inline with the class
     void initialize();
