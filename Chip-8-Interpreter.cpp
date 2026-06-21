@@ -136,7 +136,7 @@ class Chip8{
     void OP_9XY0(){ //Needs to be in cycle
         uint16_t X = (opcode & 0x0F00) >> 8; //Gets value of X
         uint16_t Y = (opcode & 0x00F0) >> 4; //gets the value of y
-        if(V[X] == V[Y]){
+        if(V[X] != V[Y]){
             PC += 2;
         }
     }
