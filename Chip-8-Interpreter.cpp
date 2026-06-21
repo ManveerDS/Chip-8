@@ -160,6 +160,39 @@ class Chip8{
         uint16_t Y = (opcode & 0x00F0) >> 4; //value of Y
         V[X] = (V[Y] ^ V[X]); //XOR
     }
+    void OP_8XY4(){
+        uint16_t X = (opcode & 0x0F00) >> 8; //Value of X
+        uint16_t Y = (opcode & 0x00F0) >> 4; //value of Y
+        uint16_t Result = V[X] + V[Y];
+        if (Result > 255){
+            V[0xF] = 1;
+        }
+        else{
+            V[X] = Result & 0xFF; // we want only the low bytes for 8_bit so nothing above 255
+        }
+    }
+    void OP_8XY5(){
+        uint16_t X = (opcode & 0x0F00) >> 8; //Value of X
+        uint16_t Y = (opcode & 0x00F0) >> 4; //value of Y
+        uint16_t Result = V[X] - V[Y];
+        if (Result < 0){
+            V[0xF] = 1;
+        }
+        else{
+            V[X] = Result & 0xFF; // we want only the low bytes for 8_bit so nothing above 255
+        }
+    }
+    void OP_8XY7(){
+        uint16_t X = (opcode & 0x0F00) >> 8; //Value of X
+        uint16_t Y = (opcode & 0x00F0) >> 4; //value of Y
+        uint16_t Result = V[Y] - V[X];
+        if (Result < 0){
+            V[0xF] = 1;
+        }
+        else{
+            V[X] = Result & 0xFF; // we want only the low bytes for 8_bit so nothing above 255
+        }
+    }
     //The functions below will not be written inline with the class
     void initialize();
     void cycle();
