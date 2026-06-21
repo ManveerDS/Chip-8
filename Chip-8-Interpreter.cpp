@@ -112,6 +112,20 @@ class Chip8{
         --stack_pointer;
         PC = Stack[stack_pointer];
     }
+    void OP_3XNN(){
+        uint16_t X = (opcode & 0x0F00) >> 8; //Gets value of X
+        uint16_t NN = opcode & 0x00FF; //Gets value of NN
+        if(V[X] == NN){
+            PC += 2; //skips the next intrsuction if value X equals NN
+        }
+    }
+    void OP_4XNN(){
+        uint16_t X = (opcode & 0x0F00) >> 8; //Gets value of X
+        uint16_t NN = opcode & 0x00FF; //Gets value of NN
+        if(V[X] != NN){
+            PC += 2; //skips the next intrsuction if value X equals NN
+        }
+    }
     //The functions below will not be written inline with the class
     void initialize();
     void cycle();
@@ -138,6 +152,15 @@ void Chip8::cycle(){
             break;
         case 0x7000:
             OP_7XNN();
+            break;
+        case 0x3000:
+            OP_3XNN();
+            break;
+        case 0x4000:
+            OP_4XNN();
+            break;
+        case 0x0000:
+            OP_OOEE();
             break;
         default:
         std::cout << "Opcode switch missing\n";
