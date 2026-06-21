@@ -126,6 +126,20 @@ class Chip8{
             PC += 2; //skips the next intrsuction if value X equals NN
         }
     }
+    void OP_5XY0(){ //needs to be in cycle
+        uint16_t X = (opcode & 0x0F00) >> 8; //Gets value of X
+        uint16_t Y = (opcode & 0x00F0) >> 4; //gets the value of y
+        if(V[X] == V[Y]){
+            PC += 2;
+        }
+    }
+    void OP_9XY0(){ //Needs to be in cycle
+        uint16_t X = (opcode & 0x0F00) >> 8; //Gets value of X
+        uint16_t Y = (opcode & 0x00F0) >> 4; //gets the value of y
+        if(V[X] == V[Y]){
+            PC += 2;
+        }
+    }
     //The functions below will not be written inline with the class
     void initialize();
     void cycle();
@@ -160,8 +174,13 @@ void Chip8::cycle(){
             OP_4XNN();
             break;
         case 0x0000:
-            OP_OOEE();
-            break;
+            switch(opcode & 0x00FF)
+            case 0xE0:
+                OP_00E0();
+                break;
+            case 0xEE:
+                OP_OOEE();
+                break;
         default:
         std::cout << "Opcode switch missing\n";
     }
