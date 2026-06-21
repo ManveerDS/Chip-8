@@ -108,6 +108,10 @@ class Chip8{
         V[X] += NN; //Adds NN to VX (carry flag needs to be changed if there is a carry)
         //TODO: Implement carry flag
     }
+    void OP_OOEE(){
+        --stack_pointer;
+        PC = Stack[stack_pointer];
+    }
     //The functions below will not be written inline with the class
     void initialize();
     void cycle();
